@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of pyfesom2
-# Original code by Dmitry Sidorenko, Nikolay Koldunov, 
+# Original code by Dmitry Sidorenko, Nikolay Koldunov,
 # Qiang Wang, Sergey Danilov and Patrick Scholz
 #
 
@@ -186,9 +186,17 @@ def pfinterp():
         prog="pfinterp", description="Interpolates FESOM2 data to regular grid."
     )
     parser.add_argument("meshpath", help="Path to the mesh folder")
-    parser.add_argument("result_path", help="Path to the results")
+    parser.add_argument("result_path", help="Path to the results or file")
     parser.add_argument(
         "variable", default="temp", help="Name of the variable inside the file"
+    )
+    parser.add_argument(
+        "--file-mode",
+        "-f",
+        type=bool,
+        default=False,
+        dest="file_mode",
+        help="Treat the `result_path` as a file, rather than extracting the file from results directory",
     )
     parser.add_argument(
         "--years",
@@ -282,6 +290,7 @@ def pfinterp():
         print("Mesh path:                     {}".format(args.meshpath))
         print("Input file path:               {}".format(args.result_path))
         print("Name of the variable:          {}".format(args.variable))
+        print("File Mode:                     {}".format(args.file_mode))
         print("Years:                         {}".format(args.years))
         print("Depths:                         {}".format(args.depths))
         print("Bounding box:                  {}".format(args.box))
@@ -307,18 +316,21 @@ def pfinterp():
     lonreg2, latreg2 = np.meshgrid(lonreg, latreg)
 
     # first load the metadata to get more information
-    data = get_data(
-        result_path=args.result_path,
-        variable=args.variable,
-        years=years,
-        mesh=mesh,
-        runid="fesom",
-        records=-1,
-        depth=None,
-        how=None,
-        ncfile=None,
-        compute=False,
-    )
+    if not args.file_mode:
+        data = get_data(
+            result_path=args.result_path,
+            variable=args.variable,
+            years=years,
+            mesh=mesh,
+            runid="fesom",
+            records=-1,
+            depth=None,
+            how=None,
+            ncfile=None,
+            compute=False,
+        )
+    else:
+        data = xr.open_dataset(args.result_path)
 
     time_shape = data.time.shape[0]
     timesteps = parse_timesteps(args.timesteps, time_shape)
